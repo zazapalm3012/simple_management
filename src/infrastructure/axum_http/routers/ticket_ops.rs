@@ -1,4 +1,4 @@
-use axum::{extract::State, http::StatusCode, middleware, response::IntoResponse, routing::{ post, Router}, Extension, Json};
+use axum::{extract::{Path, State}, http::StatusCode, middleware, response::IntoResponse, routing::{ delete, post, Router}, Extension, Json};
 
 use std::sync::Arc;
 
@@ -12,6 +12,7 @@ pub fn routes(db_pool: Arc<PgPoolSquad>) -> Router {
 
     Router::new()
     .route("/", post(add))
+    .route("/:ticket_id", delete(remove))
     .route_layer(middleware::from_fn(users_authorization))
     .with_state(Arc::new(ticket_ops_usecase))
 }
@@ -26,6 +27,20 @@ where
 {
     match ticket_ops_usecase.add(add_ticket_model).await {
         Ok(ticket_id) => (StatusCode::CREATED, format!("Create successfully!, Ticket with id: {}", ticket_id)).into_response(),
+        Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response(),
+    }
+}
+
+pub async fn remove<T>(
+    State(ticket_ops_usecase): State<Arc<TicketOpsUsecase<T>>>,
+    Path(ticket_id): Path<i32>,
+    Extension(_user_id): Extension<i32>,
+) -> impl IntoResponse
+where
+    T: TicketOpsRepository + Send + Sync,
+{
+    match ticket_ops_usecase.remove(ticket_id).await {
+        Ok(ticket_id) => (StatusCode::OK, format!("Delete ticket id {} successfully!", ticket_id)).into_response(),
         Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response(),
     }
 }

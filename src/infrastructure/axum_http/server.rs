@@ -1,7 +1,8 @@
 use std::{net::SocketAddr, sync::Arc};
 
-use axum::Router;
+use axum::{http::Method, Router};
 use anyhow::{Ok, Result};
+use tower_http::{cors::{Any, CorsLayer}, limit::RequestBodyLimitLayer, trace::TraceLayer};
 use crate::{config::config_model::DotEnvyConfig, infrastructure::{postgres::postgres_connection::PgPoolSquad}};
 use crate::infrastructure::axum_http::routers;
 
@@ -10,7 +11,22 @@ pub async fn start(config: Arc<DotEnvyConfig>, db_pool: Arc<PgPoolSquad>) -> Res
     .nest("/authentication", routers::authentication::routes(Arc::clone(&db_pool)))
     .nest("/user", routers::users::routes(Arc::clone(&db_pool)))
     .nest("/ticket", routers::ticket_ops::routes(Arc::clone(&db_pool)))
-    .nest("/view", routers::ticket_viewing::routes(Arc::clone(&db_pool)));
+    .nest("/view", routers::ticket_viewing::routes(Arc::clone(&db_pool)))
+    .layer(RequestBodyLimitLayer::new(
+        (config.server.body_limit * 1024 * 1024).try_into()?,
+    ))
+    .layer(
+        CorsLayer::new()
+            .allow_methods([
+                Method::GET,
+                Method::POST,
+                Method::PUT,
+                Method::PATCH,
+                Method::DELETE,
+            ])
+            .allow_origin(Any),
+    )
+    .layer(TraceLayer::new_for_http());
 
     let addr = SocketAddr::from(([0, 0, 0, 0], config.server.port));
 

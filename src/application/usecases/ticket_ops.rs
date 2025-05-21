@@ -25,4 +25,9 @@ where
 
         Ok(ticket_id)
     }
+    pub async fn remove(&self, ticket_id: i32) -> Result<i32>{
+        let ticket_id = self.ticket_ops_repository.remove(ticket_id).await?;
+
+        Ok(ticket_id)
+    }
 }
