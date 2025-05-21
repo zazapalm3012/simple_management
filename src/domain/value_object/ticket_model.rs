@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
-use crate::domain::entities::tickets::AddTicketEntity;
+use crate::domain::entities::tickets::{AddTicketEntity, EditTicketEntity};
+
+use super::{ticket_priority::TicketPriority, ticket_statuses::TicketStatus};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddTicketModel{
@@ -25,6 +27,24 @@ impl AddTicketModel{
             reject_message: self.reject_message.clone(),
             ticket_file : self.ticket_file.clone(),
             created_at: chrono::Utc::now().naive_utc(),
+            updated_at: chrono::Utc::now().naive_utc(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EditTicketModel {
+    pub status: Option<TicketStatus>,
+    pub priority: Option<TicketPriority>,
+    pub reject_message: Option<String>,
+}
+
+impl EditTicketModel {
+    pub fn to_entity(&self) -> EditTicketEntity {
+        EditTicketEntity {
+            status: self.status.clone().map(|s| s.to_string()),
+            priority: self.priority.clone().map(|p| p.to_string()),
+            reject_message: self.reject_message.clone(),
             updated_at: chrono::Utc::now().naive_utc(),
         }
     }

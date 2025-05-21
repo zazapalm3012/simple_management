@@ -3,7 +3,7 @@ use anyhow::{Ok, Result};
 use axum::async_trait;
 use diesel::{dsl::{delete, insert_into}, prelude::*};
 
-use crate::{domain::{entities::tickets::AddTicketEntity, repositories::ticket_ops::TicketOpsRepository}, infrastructure::postgres::{postgres_connection::PgPoolSquad, schema::tickets}};
+use crate::{domain::{entities::tickets::{AddTicketEntity, EditTicketEntity}, repositories::ticket_ops::TicketOpsRepository}, infrastructure::postgres::{postgres_connection::PgPoolSquad, schema::tickets}};
 
 pub struct TicketOpsPostgres{
     db_pool: Arc<PgPoolSquad>
@@ -32,6 +32,18 @@ impl TicketOpsRepository for TicketOpsPostgres{
         
         let result = delete(tickets::table)
         .filter(tickets::id.eq(ticket_id))
+        .returning(tickets::id)
+        .get_result::<i32>(&mut conn)?;
+
+        Ok(result)
+    }
+
+    async fn edit(&self, ticket_id: i32, edit_ticket_entity: EditTicketEntity) -> Result<i32>{
+        let mut conn = Arc::clone(&self.db_pool).get()?;
+        
+        let result = diesel::update(tickets::table)
+        .filter(tickets::id.eq(ticket_id))
+        .set(edit_ticket_entity)
         .returning(tickets::id)
         .get_result::<i32>(&mut conn)?;
 

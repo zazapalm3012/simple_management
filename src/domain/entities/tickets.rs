@@ -34,3 +34,12 @@ pub struct AddTicketEntity {
     pub created_at : NaiveDateTime,
     pub updated_at : NaiveDateTime,
 }
+
+#[derive(Debug, Clone, Queryable, AsChangeset)]
+#[diesel(table_name = tickets)]
+pub struct EditTicketEntity {
+    pub status: Option<String>,
+    pub priority: Option<String>,
+    pub reject_message: Option<String>,
+    pub updated_at: NaiveDateTime,
+}
